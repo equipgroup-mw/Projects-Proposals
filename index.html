@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#0a1625">
+  <title>Proposal Tracker Dashboard</title>
+  <link rel="icon" type="image/png" href="assets/browser.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --brand-gold: #c9a94b;
+      --brand-gold-light: #e6c468;
+      --brand-navy: #0a1625;
+      --brand-dark-blue: #0f2136;
+      --brand-card-bg: #10273e;
+      --text-primary: #f0f2f5;
+      --text-secondary: #b9c7dd;
+      --text-muted: #8896aa;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --border-subtle: rgba(201, 169, 75, 0.2);
+      --shadow-card: 0 8px 32px rgba(0,0,0,0.4);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --radius-card: 20px;
+      --radius-pill: 30px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(145deg, var(--brand-navy) 0%, var(--brand-dark-blue) 100%);
+      font-family: 'Libre Franklin', system-ui, -apple-system, sans-serif;
+      padding: clamp(0.8rem, 3vw, 2rem);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, h5, h6, .hero-title, .card-header, th {
+      font-family: 'Georgia', serif;
+      font-weight: 700;
+    }
+    .dashboard { max-width: 1400px; margin: 0 auto; width: 100%; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin-bottom: 1.5rem; padding: 0.5rem 0; flex-wrap: wrap; }
+    .header-logo { max-height: 90px; width: auto; max-width: 100%; object-fit: contain; }
+    .subtitle { color: var(--text-secondary); font-size: clamp(0.85rem, 2.8vw, 1rem); display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; justify-content: flex-end; text-align: right; }
+    .latest-update-badge { background: rgba(201, 169, 75, 0.12); border: 1px solid var(--brand-gold); color: var(--brand-gold-light); padding: 0.2rem 0.7rem; border-radius: var(--radius-pill); font-size: clamp(0.7rem, 2.5vw, 0.75rem); font-weight: 500; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+    .filter-bar { display: flex; align-items: center; gap: 0.8rem; background: rgba(201,169,75,0.06); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 0.8rem 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .filter-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .filter-select { background: rgba(201, 169, 75, 0.08); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 0.4rem 0.8rem; border-radius: var(--radius-pill); font-family: 'Libre Franklin', sans-serif; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: var(--transition); white-space: nowrap; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c9a94b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .6rem; padding-right: 2rem; }
+    .filter-select:hover, .filter-select:focus { background-color: rgba(201, 169, 75, 0.2); border-color: var(--brand-gold); color: var(--brand-gold-light); outline: none; }
+    .filter-select option { background: var(--brand-navy); color: var(--text-primary); }
+    .reset-btn { background: rgba(231, 76, 60, 0.1); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.3); padding: 0.4rem 1rem; border-radius: var(--radius-pill); font-family: 'Libre Franklin', sans-serif; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: var(--transition); margin-left: auto; }
+    .reset-btn:hover { background: rgba(231, 76, 60, 0.2); border-color: var(--danger); }
+    .error-banner { background: rgba(231, 76, 60, 0.1); border: 1px solid var(--danger); color: #e74c3c; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; display: none; align-items: center; gap: 0.5rem; }
+    .error-banner.visible { display: flex; }
+    .hero-section { margin-bottom: 1.5rem; }
+    .hero-card { background: linear-gradient(160deg, #1e3a5f, #142d4a, #0d1f36); border: 2px solid rgba(201,169,75,0.6); border-radius: 28px; padding: clamp(1.2rem, 3vw, 1.8rem); min-height: 160px; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; box-shadow: 0 20px 60px rgba(201, 169, 75, 0.15), 0 12px 40px rgba(0,0,0,0.5); gap: clamp(1.5rem, 4vw, 3rem); cursor: pointer; transition: transform 0.2s ease; user-select: none; }
+    .hero-card:hover { transform: translateY(-2px); }
+    .hero-top-line { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, rgba(201,169,75,0), #e6c468, rgba(201,169,75,0)); box-shadow: 0 0 15px rgba(201,169,75,0.5); }
+    .hero-ambient-light { position: absolute; top: -40%; right: -10%; width: 450px; height: 450px; background: radial-gradient(circle, rgba(201,169,75,0.1) 0%, transparent 70%); pointer-events: none; }
+    .hero-left { flex: 0 0 auto; width: clamp(60px, 12vw, 80px); display: flex; align-items: center; justify-content: center; z-index: 2; }
+    .hero-icon-ring { width: 100%; aspect-ratio: 1; border-radius: 50%; background: rgba(201,169,75,0.08); border: 2px solid rgba(201,169,75,0.3); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(201,169,75,0.25), inset 0 0 15px rgba(201,169,75,0.1); }
+    .custom-icon { display: inline-block; }
+    .hero-icon { font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1; }
+    .hero-center { flex: 1; min-width: 0; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
+    .hero-title { font-size: clamp(0.75rem, 1.5vw, 0.85rem); text-transform: uppercase; letter-spacing: 3px; color: var(--brand-gold-light); margin-bottom: 0.1rem; font-weight: 700; }
+    .hero-kpi-container { display: flex; flex-direction: row; align-items: baseline; gap: 0.8rem; flex-wrap: wrap; }
+    .hero-kpi { font-size: clamp(2.2rem, 7vw, 9rem); font-weight: 800; letter-spacing: -2px; color: #ffffff; line-height: 0.9; white-space: nowrap; margin-bottom: 0.15rem; }
+    .hero-kpi-suffix { font-size: clamp(1rem, 2.5vw, 1.5rem); font-weight: 700; color: #ffffff; line-height: 0.9; opacity: 0.9; font-family: 'Georgia', serif; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 30vw, 180px), 1fr)); gap: clamp(0.6rem, 2vw, 1rem); margin-bottom: 1.5rem; }
+    .metric-card { background: var(--brand-card-bg); border: 1px solid var(--border-subtle); border-radius: 16px; padding: clamp(0.9rem, 3vw, 1.2rem); box-shadow: var(--shadow-card); transition: var(--transition); border-left: 4px solid var(--brand-gold); display: flex; flex-direction: column; min-height: 110px; }
+    .metric-card:hover { transform: translateY(-3px); border-left-color: var(--brand-gold-light); box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
+    .metric-card .label { font-size: clamp(0.65rem, 2.2vw, 0.75rem); text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.3rem; }
+    .metric-card .value { font-size: clamp(1.3rem, 4vw, 2rem); font-weight: 700; color: white; line-height: 1.1; margin: 0.1rem 0; letter-spacing: -0.5px; font-family: 'Georgia', serif; }
+    .metric-card .context { font-size: clamp(0.65rem, 2.2vw, 0.7rem); color: var(--text-muted); margin-top: auto; padding-top: 0.4rem; border-top: 1px dashed rgba(255,255,255,0.08); }
+    .section-title { font-size: clamp(0.75rem, 2.5vw, 0.85rem); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; color: var(--brand-gold); margin: clamp(1.2rem, 4vw, 2rem) 0 clamp(0.5rem, 2vw, 0.8rem); padding-bottom: clamp(0.3rem, 1.5vw, 0.4rem); display: inline-flex; align-items: center; gap: 0.5rem; position: relative; width: 100%; }
+    .section-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--brand-gold), transparent); border-radius: 2px; }
+    .card { background: var(--brand-card-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-card); padding: clamp(1rem, 4vw, 1.5rem); margin-top: clamp(0.6rem, 2vw, 1rem); box-shadow: var(--shadow-card); }
+    .card-header { font-size: clamp(1rem, 3.5vw, 1.15rem); font-weight: 700; margin-bottom: clamp(0.8rem, 3vw, 1.2rem); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-left: 4px solid var(--brand-gold); padding-left: clamp(0.6rem, 2.5vw, 1rem); color: #ffffff; line-height: 1.3; flex-wrap: wrap; }
+    .chart-container { position: relative; height: clamp(250px, 40vw, 320px); width: 100%; margin-top: clamp(0.6rem, 2vw, 1rem); display: flex; align-items: center; justify-content: center; }
+    .chart-container canvas { max-width: 100%; max-height: 100%; }
+    .table-toolbar { display: flex; justify-content: flex-end; margin-bottom: 1rem; gap: 0.8rem; align-items: center; }
+    .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 0.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 800px; }
+    thead th { background: rgba(201, 169, 75, 0.1); padding: 0.8rem 0.6rem; text-align: left; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-gold-light); border-bottom: 2px solid var(--border-subtle); white-space: nowrap; font-family: 'Georgia', serif; cursor: pointer; user-select: none; position: relative; }
+    thead th:hover { color: #fff; }
+    thead th::after { content: '⇅'; opacity: 0.3; margin-left: 0.4rem; font-size: 0.6rem; }
+    thead th.sort-asc::after { content: '↑'; opacity: 1; color: var(--brand-gold); }
+    thead th.sort-desc::after { content: '↓'; opacity: 1; color: var(--brand-gold); }
+    tbody td { padding: 0.7rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-secondary); vertical-align: middle; }
+    tbody tr:hover { background: rgba(201, 169, 75, 0.05); }
+    .status-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: var(--radius-pill); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    .status-badge.won { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid rgba(46, 204, 113, 0.3); }
+    .status-badge.lost { background: rgba(231, 76, 60, 0.15); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.3); }
+    .status-badge.pending { background: rgba(241, 196, 15, 0.15); color: var(--warning); border: 1px solid rgba(241, 196, 15, 0.3); }
+    .status-badge.withdrawn { background: rgba(137, 150, 170, 0.15); color: var(--text-secondary); border: 1px solid var(--text-muted); }
+    .empty-state, .loading { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 0.9rem; }
+    .updated { text-align: right; color: var(--text-muted); font-size: clamp(0.65rem, 2.2vw, 0.7rem); margin-top: clamp(1.2rem, 4vw, 2rem); padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .retry-btn { background: var(--brand-gold); color: var(--brand-navy); border: none; padding: 0.5rem 1.5rem; border-radius: var(--radius-pill); font-weight: 600; cursor: pointer; transition: var(--transition); font-family: 'Libre Franklin', sans-serif; }
+    .retry-btn:hover { background: var(--brand-gold-light); }
+    @media (max-width: 768px) {
+      .header { flex-direction: column; align-items: center; gap: 0.8rem; }
+      .subtitle { flex-direction: column; align-items: center; text-align: center; gap: 0.4rem; width: 100%; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-select { width: 100%; text-align-last: center; }
+      .reset-btn { margin-left: 0; margin-top: 0.5rem; }
+      .hero-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .chart-container { height: 250px; }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+  <div class="header">
+    <img src="assets/logoFull.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+    <div class="subtitle">
+      <span>Proposal Tracking Dashboard · 2026</span>
+      <span id="latestUpdateBadge" class="latest-update-badge"><span class="custom-icon">⏱</span> Loading data...</span>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter by Status:</span>
+    <select id="statusFilter" class="filter-select">
+      <option value="all">All Statuses</option>
+      <option value="Won">Won</option>
+      <option value="Lost">Lost</option>
+      <option value="Pending">Pending</option>
+      <option value="Withdrawn">Withdrawn</option>
+    </select>
+    <span class="filter-arrow">›</span>
+    <select id="sourceFilter" class="filter-select">
+      <option value="all">All Sources</option>
+    </select>
+    <span class="filter-arrow">›</span>
+    <select id="submissionFilter" class="filter-select">
+      <option value="all">All Submission Modes</option>
+    </select>
+    <span class="filter-arrow">›</span>
+    <select id="tierFilter" class="filter-select">
+      <option value="all">All Tiers</option>
+    </select>
+    <button class="reset-btn" id="resetFilters">Reset</button>
+  </div>
+
+  <div id="errorBanner" class="error-banner">
+    <span class="custom-icon">⚠️</span><span id="errorMessage"></span>
+    <button class="retry-btn" onclick="renderDashboard()" style="margin-left: auto;">Retry</button>
+  </div>
+
+  <!-- HERO SECTION -->
+  <div class="hero-section">
+    <div class="hero-card" id="heroCard" title="Click to toggle currency">
+      <div class="hero-top-line"></div>
+      <div class="hero-ambient-light"></div>
+      <div class="hero-left"><div class="hero-icon-ring"><span class="hero-icon custom-icon">💰</span></div></div>
+      <div class="hero-center">
+        <div class="hero-kpi-container">
+          <div class="hero-kpi" id="heroTotalWon">—</div>
+        </div>
+        <div class="hero-title" id="heroWonValueLabel">Click to toggle currency</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICS GRID -->
+  <div class="metrics-grid" id="metricsGrid">
+    <div class="loading" style="grid-column:1/-1">Loading data...</div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section-title"><span class="custom-icon">📈</span> Win Analysis & Sources</div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+    <div class="card"><div class="card-header">Proposals by Status</div><div class="chart-container"><canvas id="statusChart"></canvas></div></div>
+    <div class="card"><div class="card-header">Won by Source</div><div class="chart-container"><canvas id="sourceWinChart"></canvas></div></div>
+  </div>
+
+  <!-- WON PROPOSALS TABLE -->
+  <div class="section-title"><span class="custom-icon">🏆</span> Won Proposals</div>
+  <div class="card">
+    <div class="card-header">All Won in 2026</div>
+    <div class="table-toolbar">
+      <span class="filter-label">Filter by Month:</span>
+      <select id="wonMonthFilter" class="filter-select">
+        <option value="all">All Months</option>
+      </select>
+    </div>
+    <div class="table-wrapper">
+      <table id="wonTable">
+        <thead><tr><th data-key="id">#</th><th data-key="title">Title</th><th data-key="category">Category</th><th data-key="client">Client</th><th data-key="tier">Tier</th><th data-key="source">Source</th><th data-key="submission">Submission</th><th data-key="amountReq">Amount Req.</th><th data-key="amountWonUSD">Won (USD)</th><th data-key="amountWonMWK">Won (MWK)</th><th data-key="month">Month</th></tr></thead>
+        <tbody><tr><td colspan="11" class="loading">Loading won proposals...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ALL PROPOSALS TABLE -->
+  <div class="section-title"><span class="custom-icon">🗂️</span> All Proposals</div>
+  <div class="card">
+    <div class="card-header">Detailed View (Filtered)</div>
+    <div class="table-toolbar">
+      <span class="filter-label">Filter by Month:</span>
+      <select id="allMonthFilter" class="filter-select">
+        <option value="all">All Months</option>
+      </select>
+    </div>
+    <div class="table-wrapper">
+      <table id="allProposalsTable">
+        <thead><tr><th data-key="id">#</th><th data-key="title">Title</th><th data-key="category">Category</th><th data-key="client">Client</th><th data-key="tier">Tier</th><th data-key="source">Source</th><th data-key="submission">Submission</th><th data-key="status">Status</th><th data-key="amountReq">Req. (USD)</th><th data-key="amountWonUSD">Won (USD)</th><th data-key="amountWonMWK">Won (MWK)</th><th data-key="month">Month</th></tr></thead>
+        <tbody><tr><td colspan="12" class="loading">Loading proposals...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="updated" id="updatedLine"></div>
+</div>
+
+<script>
+  (function() {
+    // CONFIG: Paste your published Google Sheet CSV URL below
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_wSWn5L7_xBdrxHn5bibw6jhEtcc1YKwoHXVkfDe1C80IdCdLOrNHdO7a9rDdq6FxOTrvM8qnFzdb/pub?gid=0&single=true&output=csv'; 
+    
+    let rawData = [];
+    let statusChartInstance = null;
+    let sourceWinChartInstance = null;
+    
+    // Table State Management
+    const tableStates = {
+      wonTable: { sortKey: null, sortDir: 'asc', filterMonth: 'all' },
+      allProposalsTable: { sortKey: null, sortDir: 'asc', filterMonth: 'all' }
+    };
+
+    // Global UI State
+    let currentCurrency = 'USD'; // Can be 'USD' or 'MWK'
+
+    // DOM elements
+    const errorBanner = document.getElementById('errorBanner');
+    const errorMessage = document.getElementById('errorMessage');
+    const statusFilter = document.getElementById('statusFilter');
+    const sourceFilter = document.getElementById('sourceFilter');
+    const submissionFilter = document.getElementById('submissionFilter');
+    const tierFilter = document.getElementById('tierFilter');
+    const resetBtn = document.getElementById('resetFilters');
+    const heroCard = document.getElementById('heroCard');
+    const wonMonthFilter = document.getElementById('wonMonthFilter');
+    const allMonthFilter = document.getElementById('allMonthFilter');
+
+    function showError(msg) { errorBanner.classList.add('visible'); errorMessage.textContent = msg; }
+    function hideError() { errorBanner.classList.remove('visible'); }
+
+    // Map raw CSV keys to standardized keys
+    function mapRow(raw) {
+      const map = {
+        '#': 'id',
+        'Proposal Title': 'title',
+        'Category / Theme': 'category',
+        'Client / Organization': 'client',
+        'Tier (1/2/3)': 'tier',
+        'Source': 'source',
+        'Submission Mode': 'submission',
+        'Status': 'status',
+        'Amount Requested (USD)': 'amountReq',
+        'Amount Awarded (USD)': 'amountWonUSD',
+        'Amount Awarded (MWK)': 'amountWonMWK',
+        'Follow-Up Date': 'followUpDate',
+        'Month': 'month',
+        'Remarks / Notes': 'notes'
+      };
+      
+      const clean = {};
+      for (const [key, val] of Object.entries(raw)) {
+        const trimmedKey = key.trim();
+        let normalizedKey = map[trimmedKey];
+        if (!normalizedKey) {
+          normalizedKey = trimmedKey.replace(/[^a-zA-Z]/g, '').toLowerCase();
+        }
+        clean[normalizedKey] = val?.trim();
+      }
+      
+      // Helper to parse numbers (removes commas and currency symbols just in case)
+      const parseNum = (str) => parseFloat(String(str).replace(/[^0-9.-]/g, '')) || 0;
+      
+      clean.amountReq = parseNum(clean.amountReq);
+      clean.amountWonUSD = parseNum(clean.amountWonUSD);
+      clean.amountWonMWK = parseNum(clean.amountWonMWK);
+      clean.tier = clean.tier || '—';
+      clean.source = clean.source || 'Unknown';
+      clean.submission = clean.submission || '—';
+      clean.status = clean.status || 'Pending';
+      clean.month = clean.month || '—';
+      clean.category = clean.category || '—';
+      clean.client = clean.client || '—';
+      clean.title = clean.title || 'Untitled';
+      
+      // Convert ID to integer for proper sorting
+      clean.id = parseInt(clean.id, 10) || 0;
+      return clean;
+    }
+
+    async function fetchData() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch(SHEET_CSV_URL, { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        clearTimeout(timeout);
+        
+        // Split into lines and remove the first 5 rows (summary data) 
+        const lines = text.split(/\r?\n/);
+        const cleanCsvText = lines.slice(5).join('\n');
+        
+        const parsed = Papa.parse(cleanCsvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim()
+        });
+        
+        rawData = parsed.data
+          .filter(r => r && r['#'] && String(r['#']).trim() !== '')
+          .map(mapRow);
+        
+        if (rawData.length === 0) throw new Error('No data found in the sheet');
+        
+        console.log('Loaded proposals:', rawData.length);
+      } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+      }
+    }
+
+    function populateFilters() {
+      const sources = [...new Set(rawData.map(d => d.source).filter(Boolean))].sort();
+      const submissions = [...new Set(rawData.map(d => d.submission).filter(Boolean))].sort();
+      const tiers = [...new Set(rawData.map(d => d.tier).filter(Boolean))].sort();
+      const months = [...new Set(rawData.map(d => d.month).filter(Boolean))].sort();
+
+      sourceFilter.innerHTML = '<option value="all">All Sources</option>';
+      sources.forEach(s => sourceFilter.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`));
+      
+      submissionFilter.innerHTML = '<option value="all">All Submission Modes</option>';
+      submissions.forEach(s => submissionFilter.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`));
+      
+      tierFilter.innerHTML = '<option value="all">All Tiers</option>';
+      tiers.forEach(t => tierFilter.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`));
+      
+      // Populate Month Filters
+      const monthOptionsHTML = '<option value="all">All Months</option>' + months.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      wonMonthFilter.innerHTML = monthOptionsHTML;
+      allMonthFilter.innerHTML = monthOptionsHTML;
+    }
+
+    function getFilteredData() {
+      const status = statusFilter.value;
+      const source = sourceFilter.value;
+      const submission = submissionFilter.value;
+      const tier = tierFilter.value;
+      
+      return rawData.filter(d => {
+        if (status !== 'all' && d.status.toLowerCase() !== status.toLowerCase()) return false;
+        if (source !== 'all' && d.source !== source) return false;
+        if (submission !== 'all' && d.submission !== submission) return false;
+        if (tier !== 'all' && d.tier !== tier) return false;
+        return true;
+      });
+    }
+
+    function formatCurrency(amount, currency) {
+      if (currency === 'MWK') {
+        return `MWK ${amount.toLocaleString('en-US', {maximumFractionDigits:0})}`;
+      }
+      return `$${amount.toLocaleString('en-US', {maximumFractionDigits:0})}`;
+    }
+
+    function renderMetrics(data) {
+      const wonCount = data.filter(d => d.status.toLowerCase() === 'won').length;
+      const lostCount = data.filter(d => d.status.toLowerCase() === 'lost').length;
+      const pendingCount = data.filter(d => d.status.toLowerCase() === 'pending').length;
+      const withdrawnCount = data.filter(d => d.status.toLowerCase() === 'withdrawn').length;
+      const totalProposals = data.length;
+      const winRate = totalProposals > 0 ? ((wonCount / totalProposals) * 100).toFixed(1) : '0.0';
+      const totalWonUSD = data.filter(d => d.status.toLowerCase() === 'won').reduce((s, d) => s + d.amountWonUSD, 0);
+      const totalWonMWK = data.filter(d => d.status.toLowerCase() === 'won').reduce((s, d) => s + d.amountWonMWK, 0);
+
+      // Render Hero KPI dynamically based on selected currency
+      const heroAmount = currentCurrency === 'MWK' ? totalWonMWK : totalWonUSD;
+      document.getElementById('heroTotalWon').textContent = formatCurrency(heroAmount, currentCurrency);
+      document.getElementById('heroWonValueLabel').textContent = `From Proposals Won (2026)`;
+
+      // KPI Context currency updates dynamically
+      const wonValueContext = currentCurrency === 'MWK' ? totalWonMWK : totalWonUSD;
+
+      const metricsHTML = `
+        <div class="metric-card">
+          <div class="label">Total Proposals</div>
+          <div class="value">${totalProposals}</div>
+          <div class="context">Win rate: ${winRate}%</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">Won</div>
+          <div class="value" style="color:var(--success)">${wonCount}</div>
+          <div class="context">${formatCurrency(wonValueContext, currentCurrency)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">Lost</div>
+          <div class="value" style="color:var(--danger)">${lostCount}</div>
+          <div class="context">Proposals lost</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">Pending</div>
+          <div class="value" style="color:var(--warning)">${pendingCount}</div>
+          <div class="context">In review</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">Withdrawn</div>
+          <div class="value" style="color:var(--text-muted)">${withdrawnCount}</div>
+          <div class="context">Not submitted</div>
+        </div>
+      `;
+      document.getElementById('metricsGrid').innerHTML = metricsHTML;
+    }
+
+    function renderCharts(data) {
+      const statusCtx = document.getElementById('statusChart');
+      if (statusChartInstance) statusChartInstance.destroy();
+      
+      const statusCounts = {};
+      data.forEach(d => { 
+        const s = d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase(); 
+        statusCounts[s] = (statusCounts[s] || 0) + 1; 
+      });
+      
+      if (Object.keys(statusCounts).length === 0) { 
+        statusCtx.parentElement.innerHTML = '<div class="empty-state">No data</div>'; 
+        return; 
+      }
+      
+      statusCtx.parentElement.innerHTML = '<canvas id="statusChart"></canvas>';
+      const statusCanvas = document.getElementById('statusChart');
+      
+      const statusColors = {
+        'Won': '#2ecc71',
+        'Lost': '#e74c3c',
+        'Pending': '#f39c12',
+        'Withdrawn': '#8896aa'
+      };
+      
+      statusChartInstance = new Chart(statusCanvas, {
+        type: 'doughnut',
+        data: { 
+          labels: Object.keys(statusCounts), 
+          datasets: [{ 
+            data: Object.values(statusCounts), 
+            backgroundColor: Object.keys(statusCounts).map(s => statusColors[s] || '#8896aa'), 
+            borderColor: '#10273e', 
+            borderWidth: 2 
+          }] 
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          cutout: '65%', 
+          plugins: { 
+            legend: { 
+              position: 'bottom', 
+              labels: { color: '#f0f2f5', padding: 16, usePointStyle: true } 
+            } 
+          } 
+        }
+      });
+
+      const sourceCtx = document.getElementById('sourceWinChart');
+      if (sourceWinChartInstance) sourceWinChartInstance.destroy();
+      
+      const wonData = data.filter(d => d.status.toLowerCase() === 'won');
+      const sourceCounts = {};
+      wonData.forEach(d => { 
+        sourceCounts[d.source] = (sourceCounts[d.source] || 0) + 1; 
+      });
+      
+      if (Object.keys(sourceCounts).length === 0) { 
+        sourceCtx.parentElement.innerHTML = '<div class="empty-state">No wins with current filters</div>'; 
+        return; 
+      }
+      
+      sourceCtx.parentElement.innerHTML = '<canvas id="sourceWinChart"></canvas>';
+      const sourceCanvas = document.getElementById('sourceWinChart');
+      
+      sourceWinChartInstance = new Chart(sourceCanvas, {
+        type: 'bar',
+        data: { 
+          labels: Object.keys(sourceCounts), 
+          datasets: [{ 
+            label: 'Won Proposals', 
+            data: Object.values(sourceCounts), 
+            backgroundColor: 'rgba(201,169,75,0.7)', 
+            borderColor: '#c9a94b', 
+            borderWidth: 1 
+          }] 
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          plugins: { 
+            legend: { display: false } 
+          }, 
+          scales: { 
+            y: { 
+              beginAtZero: true, 
+              ticks: { stepSize: 1, color: '#b9c7dd' } 
+            }, 
+            x: { 
+              ticks: { color: '#b9c7dd' } 
+            } 
+          } 
+        }
+      });
+    }
+
+    function sortData(data, tableId, sortKey) {
+      const state = tableStates[tableId];
+      if (state.sortKey === sortKey) {
+        // Toggle direction
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortKey = sortKey;
+        state.sortDir = 'asc';
+      }
+      
+      const direction = state.sortDir === 'asc' ? 1 : -1;
+      
+      return [...data].sort((a, b) => {
+        let valA = a[sortKey];
+        let valB = b[sortKey];
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return (valA - valB) * direction;
+        }
+        
+        // String comparison
+        valA = String(valA || '').toLowerCase();
+        valB = String(valB || '').toLowerCase();
+        if (valA < valB) return -1 * direction;
+        if (valA > valB) return 1 * direction;
+        return 0;
+      });
+    }
+
+    function applyTableFilters(data, tableId) {
+      const state = tableStates[tableId];
+      if (state.filterMonth !== 'all') {
+        return data.filter(d => d.month === state.filterMonth);
+      }
+      return data;
+    }
+
+    function updateSortIndicators(tableId) {
+      const table = document.getElementById(tableId);
+      const headers = table.querySelectorAll('thead th');
+      const state = tableStates[tableId];
+      
+      headers.forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.key === state.sortKey) {
+          th.classList.add(state.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+      });
+    }
+
+    function renderWonTable(wonData) {
+      const tableId = 'wonTable';
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      
+      // 1. Apply Month Filter
+      let dataToRender = applyTableFilters(wonData, tableId);
+      
+      // 2. Apply Sorting if active
+      if (tableStates[tableId].sortKey) {
+        dataToRender = sortData(dataToRender, tableId, tableStates[tableId].sortKey);
+      }
+      
+      // Update headers visually
+      updateSortIndicators(tableId);
+
+      if (dataToRender.length === 0) { 
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No won proposals match current filter</td></tr>'; 
+        return; 
+      }
+      
+      tbody.innerHTML = dataToRender.map((d, i) => `
+        <tr>
+          <td>${d.id || i + 1}</td>
+          <td>${escapeHtml(d.title)}</td>
+          <td>${escapeHtml(d.category)}</td>
+          <td>${escapeHtml(d.client)}</td>
+          <td>${escapeHtml(d.tier)}</td>
+          <td>${escapeHtml(d.source)}</td>
+          <td>${escapeHtml(d.submission)}</td>
+          <td>$${d.amountReq.toLocaleString()}</td>
+          <td>$${d.amountWonUSD.toLocaleString()}</td>
+          <td>MWK ${d.amountWonMWK.toLocaleString()}</td>
+          <td>${escapeHtml(d.month)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAllProposalsTable(data) {
+      const tableId = 'allProposalsTable';
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      
+      // 1. Apply Month Filter
+      let dataToRender = applyTableFilters(data, tableId);
+      
+      // 2. Apply Sorting if active
+      if (tableStates[tableId].sortKey) {
+        dataToRender = sortData(dataToRender, tableId, tableStates[tableId].sortKey);
+      }
+      
+      // Update headers visually
+      updateSortIndicators(tableId);
+
+      if (dataToRender.length === 0) { 
+        tbody.innerHTML = '<tr><td colspan="12" class="empty-state">No proposals found</td></tr>'; 
+        return; 
+      }
+      
+      tbody.innerHTML = dataToRender.map((d, i) => {
+        const statusClass = d.status.toLowerCase();
+        return `
+        <tr>
+          <td>${d.id || i + 1}</td>
+          <td>${escapeHtml(d.title)}</td>
+          <td>${escapeHtml(d.category)}</td>
+          <td>${escapeHtml(d.client)}</td>
+          <td>${escapeHtml(d.tier)}</td>
+          <td>${escapeHtml(d.source)}</td>
+          <td>${escapeHtml(d.submission)}</td>
+          <td><span class="status-badge ${statusClass}">${escapeHtml(d.status)}</span></td>
+          <td>$${d.amountReq.toLocaleString()}</td>
+          <td>$${d.amountWonUSD.toLocaleString()}</td>
+          <td>MWK ${d.amountWonMWK.toLocaleString()}</td>
+          <td>${escapeHtml(d.month)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function updateUI() {
+      const filtered = getFilteredData();
+      renderMetrics(filtered);
+      renderCharts(filtered);
+      const wonOnly = filtered.filter(d => d.status.toLowerCase() === 'won');
+      renderWonTable(wonOnly);
+      renderAllProposalsTable(filtered);
+      document.getElementById('updatedLine').textContent = `Synced: ${new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} | Showing ${filtered.length} proposals`;
+    }
+
+    async function renderDashboard() {
+      hideError();
+      try {
+        await fetchData();
+        populateFilters();
+        updateUI();
+        document.getElementById('latestUpdateBadge').innerHTML = `<span class="custom-icon">⏱</span> Data loaded: ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        console.error(err);
+        showError(`Failed to load: ${err.message}`);
+        document.getElementById('metricsGrid').innerHTML = '<div class="empty-state"><span class="custom-icon">⚠️</span> Unable to load data</div>';
+        document.querySelector('#wonTable tbody').innerHTML = '<tr><td colspan="11" class="empty-state">—</td></tr>';
+        document.querySelector('#allProposalsTable tbody').innerHTML = '<tr><td colspan="12" class="empty-state">—</td></tr>';
+      }
+    }
+
+    // --- EVENT LISTENERS ---
+
+    // Global filters
+    statusFilter.addEventListener('change', updateUI);
+    sourceFilter.addEventListener('change', updateUI);
+    submissionFilter.addEventListener('change', updateUI);
+    tierFilter.addEventListener('change', updateUI);
+    
+    resetBtn.addEventListener('click', () => {
+      statusFilter.value = 'all';
+      sourceFilter.value = 'all';
+      submissionFilter.value = 'all';
+      tierFilter.value = 'all';
+      wonMonthFilter.value = 'all';
+      allMonthFilter.value = 'all';
+      tableStates.wonTable.filterMonth = 'all';
+      tableStates.allProposalsTable.filterMonth = 'all';
+      updateUI();
+    });
+
+    // Hero Card Click (Toggle Currency)
+    heroCard.addEventListener('click', () => {
+      currentCurrency = currentCurrency === 'USD' ? 'MWK' : 'USD';
+      updateUI();
+    });
+
+    // Month Filters
+    wonMonthFilter.addEventListener('change', (e) => {
+      tableStates.wonTable.filterMonth = e.target.value;
+      const filtered = getFilteredData();
+      renderWonTable(filtered.filter(d => d.status.toLowerCase() === 'won'));
+    });
+    
+    allMonthFilter.addEventListener('change', (e) => {
+      tableStates.allProposalsTable.filterMonth = e.target.value;
+      const filtered = getFilteredData();
+      renderAllProposalsTable(filtered);
+    });
+
+    // Table Headers Sorting
+    document.querySelectorAll('table thead th[data-key]').forEach(th => {
+      th.addEventListener('click', () => {
+        const tableId = th.closest('table').id;
+        const sortKey = th.dataset.key;
+        
+        if (tableId === 'wonTable') {
+          const filtered = getFilteredData();
+          renderWonTable(filtered.filter(d => d.status.toLowerCase() === 'won'));
+        } else {
+          const filtered = getFilteredData();
+          renderAllProposalsTable(filtered);
+        }
+      });
+    });
+
+    // Initial load
+    renderDashboard();
+  })();
+</script>
+</body>
+</html>

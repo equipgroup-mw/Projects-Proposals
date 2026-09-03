@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#0a1625">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tracker">
+  
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="browser.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  
+  <title>Equip Socials Tracker</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  
+  <style>
+    :root {
+      --brand-gold: #c9a94b;
+      --brand-gold-light: #e6c468;
+      --brand-navy: #0a1625;
+      --brand-dark-blue: #0f2136;
+      --brand-card-bg: #10273e;
+      --text-primary: #f0f2f5;
+      --text-secondary: #b9c7dd;
+      --text-muted: #8896aa;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --border-subtle: rgba(201, 169, 75, 0.2);
+      --shadow-card: 0 8px 32px rgba(0,0,0,0.4);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --radius-card: 20px;
+      --radius-pill: 30px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(145deg, var(--brand-navy) 0%, var(--brand-dark-blue) 100%);
+      font-family: 'Libre Franklin', system-ui, -apple-system, sans-serif;
+      padding: clamp(0.8rem, 3vw, 2rem);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, h5, h6, .hero-title, .card-header, .metric-card .label, th {
+      font-family: 'Georgia', serif;
+      font-weight: 700;
+    }
+    
+    .dashboard { max-width: 1400px; margin: 0 auto; width: 100%; }
+    
+    /* ========== HEADER ========== */
+    .header { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+      gap: 2rem; 
+      margin-bottom: 1.5rem; 
+      padding: 0.5rem 0; 
+      flex-wrap: wrap;
+    }
+    .header-logo {
+      max-height: 100px; 
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+    }
+    .subtitle { 
+      color: var(--text-secondary); 
+      font-size: clamp(0.85rem, 2.8vw, 1rem); 
+      display: flex; 
+      align-items: center; 
+      gap: 0.8rem; 
+      flex-wrap: wrap; 
+      justify-content: flex-end;
+      text-align: right;
+    }
+    .latest-update-badge { 
+      background: rgba(201, 169, 75, 0.12); 
+      border: 1px solid var(--brand-gold); 
+      color: var(--brand-gold-light); 
+      padding: 0.2rem 0.7rem; 
+      border-radius: var(--radius-pill); 
+      font-size: clamp(0.7rem, 2.5vw, 0.75rem); 
+      font-weight: 500; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 0.3rem; 
+      white-space: nowrap; 
+    }
+
+    /* ========== FILTER BAR ========== */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      background: rgba(201,169,75,0.06);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    /* New Filter Dropdown Styles */
+    .filter-select {
+      background: rgba(201, 169, 75, 0.08);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      padding: 0.4rem 0.8rem;
+      border-radius: var(--radius-pill);
+      font-family: 'Libre Franklin', sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c9a94b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right .7rem center;
+      background-size: .6rem;
+      padding-right: 2rem;
+    }
+    .filter-select:hover, .filter-select:focus {
+      background-color: rgba(201, 169, 75, 0.2);
+      border-color: var(--brand-gold);
+      color: var(--brand-gold-light);
+      outline: none;
+    }
+    .filter-select:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .filter-select option {
+      background: var(--brand-navy);
+      color: var(--text-primary);
+    }
+
+    .filter-arrow {
+      color: var(--brand-gold);
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .reset-btn {
+      background: rgba(231, 76, 60, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-pill);
+      font-family: 'Libre Franklin', sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-left: auto;
+    }
+    .reset-btn:hover {
+      background: rgba(231, 76, 60, 0.2);
+      border-color: var(--danger);
+    }
+
+    /* ========== ERROR BANNER ========== */
+    .error-banner {
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid var(--danger);
+      color: #e74c3c;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .error-banner.visible { display: flex; }
+
+    /* ========== HERO CARD ========== */
+    .hero-section { margin-bottom: 1.5rem; }
+    .hero-card {
+      background: linear-gradient(160deg, #1e3a5f, #142d4a, #0d1f36);
+      border: 2px solid rgba(201,169,75,0.6);
+      border-radius: 28px;
+      padding: clamp(1.2rem, 3vw, 1.8rem);
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(201, 169, 75, 0.15), 0 12px 40px rgba(0,0,0,0.5);
+      gap: clamp(1.5rem, 4vw, 3rem);
+    }
+    
+    .hero-top-line { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, rgba(201,169,75,0), #e6c468, rgba(201,169,75,0)); box-shadow: 0 0 15px rgba(201,169,75,0.5); }
+    .hero-ambient-light { position: absolute; top: -40%; right: -10%; width: 450px; height: 450px; background: radial-gradient(circle, rgba(201,169,75,0.1) 0%, transparent 70%); pointer-events: none; }
+
+    .hero-left { flex: 0 0 auto; width: clamp(60px, 12vw, 90px); display: flex; align-items: center; justify-content: center; z-index: 2; }
+    .hero-icon-ring { width: 100%; aspect-ratio: 1; border-radius: 50%; background: rgba(201,169,75,0.08); border: 2px solid rgba(201,169,75,0.3); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(201,169,75,0.25), inset 0 0 15px rgba(201,169,75,0.1); }
+    .hero-icon { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; }
+
+    .hero-center { flex: 1; min-width: 0; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
+    .hero-title { font-size: clamp(0.75rem, 1.5vw, 0.85rem); text-transform: uppercase; letter-spacing: 3px; color: var(--brand-gold-light); margin-bottom: 0.1rem; font-weight: 700; }
+    
+    .hero-kpi-container {
+      display: flex;
+      flex-direction: row;
+      align-items: baseline;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+    .hero-kpi { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 800; letter-spacing: -2px; color: #ffffff; line-height: 0.9; white-space: nowrap; margin-bottom: 0.15rem; }
+    .hero-kpi-suffix { font-size: clamp(1rem, 2.5vw, 1.8rem); font-weight: 700; color: #ffffff; line-height: 0.9; opacity: 0.9; font-family: 'Georgia', serif; }
+
+    /* ========== METRICS GRID ========== */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 30vw, 200px), 1fr)); gap: clamp(0.6rem, 2vw, 1rem); margin-bottom: 1.5rem; }
+    .metric-card { 
+      background: var(--brand-card-bg); 
+      border: 1px solid var(--border-subtle); 
+      border-radius: 16px; 
+      padding: clamp(0.9rem, 3vw, 1.2rem); 
+      box-shadow: var(--shadow-card); 
+      transition: var(--transition); 
+      border-left: 4px solid var(--brand-gold); 
+      display: flex; 
+      flex-direction: column; 
+      min-height: 120px;
+    }
+    .metric-card:hover { transform: translateY(-3px); border-left-color: var(--brand-gold-light); box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
+    .metric-card .label { font-size: clamp(0.65rem, 2.2vw, 0.75rem); text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.3rem; }
+    .metric-card .value { font-size: clamp(1.4rem, 5vw, 2.2rem); font-weight: 700; color: white; line-height: 1.1; margin: 0.1rem 0; letter-spacing: -0.5px; font-family: 'Georgia', serif; }
+    .metric-card .context { font-size: clamp(0.65rem, 2.2vw, 0.7rem); color: var(--text-muted); margin-top: auto; padding-top: 0.4rem; border-top: 1px dashed rgba(255,255,255,0.08); }
+
+    /* ========== SECTIONS & CARDS ========== */
+    .section-title { font-size: clamp(0.75rem, 2.5vw, 0.85rem); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; color: var(--brand-gold); margin: clamp(1.2rem, 4vw, 2rem) 0 clamp(0.5rem, 2vw, 0.8rem); padding-bottom: clamp(0.3rem, 1.5vw, 0.4rem); display: inline-flex; align-items: center; gap: 0.5rem; position: relative; width: 100%; }
+    .section-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--brand-gold), transparent); border-radius: 2px; }
+    
+    .card { background: var(--brand-card-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-card); padding: clamp(1rem, 4vw, 1.5rem); margin-top: clamp(0.6rem, 2vw, 1rem); box-shadow: var(--shadow-card); }
+    .card-header { font-size: clamp(1rem, 3.5vw, 1.15rem); font-weight: 700; margin-bottom: clamp(0.8rem, 3vw, 1.2rem); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-left: 4px solid var(--brand-gold); padding-left: clamp(0.6rem, 2.5vw, 1rem); color: #ffffff; line-height: 1.3; flex-wrap: wrap; }
+    
+    .chart-container { position: relative; height: clamp(250px, 45vw, 350px); width: 100%; margin-top: clamp(0.6rem, 2vw, 1rem); display: flex; align-items: center; justify-content: center; }
+    .chart-container canvas { max-width: 100%; max-height: 100%; }
+
+    /* ========== DATA TABLES ========== */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 0.5rem;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      min-width: 700px;
+    }
+    
+    thead th {
+      background: rgba(201, 169, 75, 0.1);
+      padding: 0.8rem 0.6rem;
+      text-align: left;
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brand-gold-light);
+      border-bottom: 2px solid var(--border-subtle);
+      white-space: nowrap;
+      font-family: 'Georgia', serif;
+    }
+    
+    tbody td {
+      padding: 0.7rem 0.6rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+    
+    tbody tr {
+      transition: background 0.2s;
+    }
+    
+    tbody tr:hover {
+      background: rgba(201, 169, 75, 0.05);
+    }
+    
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .post-type-badge { 
+      display: inline-block; 
+      padding: 0.2rem 0.5rem; 
+      border-radius: var(--radius-pill); 
+      font-size: 0.65rem; 
+      font-weight: 600; 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .post-type-badge.photo { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid rgba(46, 204, 113, 0.3); }
+    .post-type-badge.video { background: rgba(231, 76, 60, 0.15); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.3); }
+    .post-type-badge.album { background: rgba(201, 169, 75, 0.15); color: var(--brand-gold-light); border: 1px solid var(--brand-gold); }
+    .post-type-badge.status { background: rgba(137, 150, 170, 0.15); color: var(--text-secondary); border: 1px solid var(--text-muted); }
+    .post-type-badge.link { background: rgba(52, 152, 219, 0.15); color: #3498db; border: 1px solid rgba(52, 152, 219, 0.3); }
+    
+    .message-cell {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .message-cell:hover {
+      white-space: normal;
+      word-break: break-word;
+    }
+    
+    .engagement-total {
+      font-weight: 700;
+      color: var(--brand-gold-light);
+      font-family: 'Georgia', serif;
+    }
+    
+    .permalink-link {
+      color: var(--brand-gold-light);
+      text-decoration: none;
+      font-size: 0.8rem;
+      transition: color 0.2s;
+    }
+    
+    .permalink-link:hover {
+      color: var(--brand-gold);
+      text-decoration: underline;
+    }
+
+    .updated { text-align: right; color: var(--text-muted); font-size: clamp(0.65rem, 2.2vw, 0.7rem); margin-top: clamp(1.2rem, 4vw, 2rem); padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .loading, .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 1rem; }
+
+    .retry-btn {
+      background: var(--brand-gold);
+      color: var(--brand-navy);
+      border: none;
+      padding: 0.5rem 1.5rem;
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: 'Libre Franklin', sans-serif;
+    }
+    .retry-btn:hover { background: var(--brand-gold-light); }
+
+    /* ========== MOBILE ========== */
+    @media (max-width: 768px) {
+      .header { 
+        flex-direction: column; 
+        align-items: center; 
+        gap: 0.8rem; 
+      }
+      .header-logo { 
+        max-height: 180px; 
+        margin: 0 auto;
+      }
+      .subtitle {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 0.4rem;
+        width: 100%;
+      }
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .filter-select {
+        width: 100%;
+        text-align-last: center;
+      }
+      .filter-arrow { display: none; }
+      .reset-btn { margin-left: 0; margin-top: 0.5rem; }
+      .hero-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .chart-container { height: 300px; }
+      table { font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="header">
+      <img src="logoFull.png" alt="Equip Group Logo" class="header-logo">
+      <div class="subtitle">
+        <span>Facebook Tracking · Reactions, Comments & Shares</span>
+        <span id="latestUpdateBadge" class="latest-update-badge">⏱ Loading data...</span>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter Period:</span>
+      <select id="yearSelect" class="filter-select"><option value="all">All Years</option></select>
+      <span class="filter-arrow">›</span>
+      <select id="monthSelect" class="filter-select" disabled><option value="all">All Months</option></select>
+      <span class="filter-arrow">›</span>
+      <select id="weekSelect" class="filter-select" disabled><option value="all">All Weeks</option></select>
+      <button class="reset-btn" id="resetFilters">Reset</button>
+    </div>
+
+    <div id="errorBanner" class="error-banner">
+      <span>⚠️</span>
+      <span id="errorMessage"></span>
+      <button class="retry-btn" onclick="renderDashboard()" style="margin-left: auto;">Retry</button>
+    </div>
+
+    <div id="dashboard">
+      <!-- HERO SECTION -->
+      <div class="hero-section">
+        <div class="hero-card">
+          <div class="hero-top-line"></div>
+          <div class="hero-ambient-light"></div>
+          <div class="hero-left">
+            <div class="hero-icon-ring">
+              <span class="hero-icon">👥</span>
+            </div>
+          </div>
+          <div class="hero-center">
+            <div class="hero-kpi-container">
+              <div class="hero-kpi" id="heroFollowers">—</div>
+              <div class="hero-kpi-suffix">Followers</div>
+            </div>
+            <div class="hero-title" id="heroFollowersTitle">Total Current Followership</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="metrics-grid" id="metricsGrid">
+        <div class="loading">Loading data...</div>
+      </div>
+
+      <!-- CHARTS SECTION -->
+      <div class="section-title">📈 Growth & Engagement</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(0.8rem, 2.5vw, 1rem);">
+        <div class="card">
+          <div class="card-header">Follower Growth</div>
+          <div class="chart-container"><canvas id="followerChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Posts by Type</div>
+          <div class="chart-container"><canvas id="typeChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- TOP POSTS TABLE -->
+      <div class="section-title">🏆 Top Performing Posts</div>
+      <div class="card">
+        <div class="card-header">Top 10 by Engagement</div>
+        <div class="table-wrapper">
+          <table id="topPostsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Message</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>👍 Reactions</th>
+                <th>💬 Comments</th>
+                <th>🔄 Shares</th>
+                <th>🔥 Total</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="9" class="loading">Loading posts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LATEST POSTS TABLE -->
+      <div class="section-title">🕐 Recent Activity</div>
+      <div class="card">
+        <div class="card-header">Latest 5 Posts</div>
+        <div class="table-wrapper">
+          <table id="recentPostsTable">
+            <thead>
+              <tr>
+                <th>Message</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>👍 Reactions</th>
+                <th>💬 Comments</th>
+                <th>🔄 Shares</th>
+                <th>🔥 Total</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8" class="loading">Loading posts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="updated" id="updatedLine"></div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // PWA SERVICE WORKER REGISTRATION
+    // ============================================================
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+          .catch(err => console.error('Service Worker registration failed:', err));
+      });
+    }
+
+    // ============================================================
+    // CONFIGURATION
+    // ============================================================
+    const POSTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkevkUu2kE5qyvw6ndEm_dmLJcuTzDePbQLr05_kXd4pvwPEJbVggdrR9AnM_nlb02rEEskDNTQqdI/pub?gid=0&single=true&output=csv';
+    const POST_HISTORY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkevkUu2kE5qyvw6ndEm_dmLJcuTzDePbQLr05_kXd4pvwPEJbVggdrR9AnM_nlb02rEEskDNTQqdI/pub?gid=1007243462&single=true&output=csv';
+    const FOLLOWER_HISTORY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkevkUu2kE5qyvw6ndEm_dmLJcuTzDePbQLr05_kXd4pvwPEJbVggdrR9AnM_nlb02rEEskDNTQqdI/pub?gid=1388561385&single=true&output=csv';
+
+    let followerChartInstance = null;
+    let typeChartInstance = null;
+    
+    // Store raw unfiltered data
+    let RAW_DATA = { posts: [], history: [], followers: [] };
+    let CURRENT_FILTER = { start: null, end: null, label: 'All Time' };
+
+    // ============================================================
+    // ERROR HANDLING
+    // ============================================================
+    function showError(message) {
+      const banner = document.getElementById('errorBanner');
+      const msgEl = document.getElementById('errorMessage');
+      if (banner && msgEl) {
+        msgEl.textContent = message;
+        banner.classList.add('visible');
+      }
+    }
+
+    function hideError() {
+      const banner = document.getElementById('errorBanner');
+      if (banner) banner.classList.remove('visible');
+    }
+
+    // ============================================================
+    // CSV PARSER
+    // ============================================================
+    function parseCSV(csvText) {
+      const result = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false
+      });
+      return result.data;
+    }
+
+    // ============================================================
+    // DATA FETCHING
+    // ============================================================
+    async function fetchWithTimeout(url, timeout = 10000) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.text();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    }
+
+    async function fetchData() {
+      const [postsText, historyText, followersText] = await Promise.all([
+        fetchWithTimeout(POSTS_CSV_URL),
+        fetchWithTimeout(POST_HISTORY_CSV_URL),
+        fetchWithTimeout(FOLLOWER_HISTORY_CSV_URL)
+      ]);
+      
+      RAW_DATA.posts = parseCSV(postsText);
+      RAW_DATA.history = parseCSV(historyText);
+      RAW_DATA.followers = parseCSV(followersText);
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function totalEngagement(post) {
+      return (parseInt(post.reactions) || 0) + (parseInt(post.comments) || 0) + (parseInt(post.shares) || 0);
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '—';
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch { return '—'; }
+    }
+
+    function formatExactNumber(n) {
+      return n.toLocaleString('en-US');
+    }
+
+    function formatShortNumber(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+      return n.toString();
+    }
+
+    function truncateMessage(msg, maxLen = 100) {
+      if (!msg) return '—';
+      msg = msg.replace(/"/g, '').trim();
+      if (msg.length > maxLen) return msg.substring(0, maxLen - 3) + '...';
+      return msg;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ============================================================
+    // DROPDOWN POPULATION LOGIC
+    // ============================================================
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    }
+
+    function populateYears() {
+      const years = new Set();
+      RAW_DATA.posts.forEach(p => {
+        if (p.created_time) {
+          const d = new Date(p.created_time);
+          if (!isNaN(d)) years.add(d.getFullYear());
+        }
+      });
+      RAW_DATA.followers.forEach(f => {
+        if (f.snapshot_date) {
+          const d = new Date(f.snapshot_date);
+          if (!isNaN(d)) years.add(d.getFullYear());
+        }
+      });
+
+      const yearSelect = document.getElementById('yearSelect');
+      yearSelect.innerHTML = '<option value="all">All Years</option>';
+      Array.from(years).sort((a,b) => b-a).forEach(y => {
+        yearSelect.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+      });
+    }
+
+    function populateMonths(year) {
+      const monthSelect = document.getElementById('monthSelect');
+      const weekSelect = document.getElementById('weekSelect');
+      
+      monthSelect.innerHTML = '<option value="all">All Months</option>';
+      weekSelect.innerHTML = '<option value="all">All Weeks</option>';
+      weekSelect.disabled = true;
+
+      if (year === 'all') {
+        monthSelect.disabled = true;
+        return;
+      }
+
+      const months = new Set();
+      RAW_DATA.posts.forEach(p => {
+        if (p.created_time) {
+          const d = new Date(p.created_time);
+          if (!isNaN(d) && d.getFullYear() === parseInt(year)) months.add(d.getMonth());
+        }
+      });
+      RAW_DATA.followers.forEach(f => {
+        if (f.snapshot_date) {
+          const d = new Date(f.snapshot_date);
+          if (!isNaN(d) && d.getFullYear() === parseInt(year)) months.add(d.getMonth());
+        }
+      });
+
+      if (months.size > 0) {
+        monthSelect.disabled = false;
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        Array.from(months).sort((a,b) => a-b).forEach(m => {
+          monthSelect.insertAdjacentHTML('beforeend', `<option value="${m}">${monthNames[m]}</option>`);
+        });
+      } else {
+        monthSelect.disabled = true;
+      }
+    }
+
+    function populateWeeks(year, month) {
+      const weekSelect = document.getElementById('weekSelect');
+      weekSelect.innerHTML = '<option value="all">All Weeks</option>';
+
+      if (month === 'all' || month === null) {
+        weekSelect.disabled = true;
+        return;
+      }
+
+      const weeks = new Set();
+      RAW_DATA.posts.forEach(p => {
+        if (p.created_time) {
+          const d = new Date(p.created_time);
+          if (!isNaN(d) && d.getFullYear() === parseInt(year) && d.getMonth() === parseInt(month)) {
+            weeks.add(getWeekNumber(d));
+          }
+        }
+      });
+      RAW_DATA.followers.forEach(f => {
+        if (f.snapshot_date) {
+          const d = new Date(f.snapshot_date);
+          if (!isNaN(d) && d.getFullYear() === parseInt(year) && d.getMonth() === parseInt(month)) {
+            weeks.add(getWeekNumber(d));
+          }
+        }
+      });
+
+      if (weeks.size > 0) {
+        weekSelect.disabled = false;
+        Array.from(weeks).sort((a,b) => a-b).forEach(w => {
+          weekSelect.insertAdjacentHTML('beforeend', `<option value="${w}">Week ${w}</option>`);
+        });
+      } else {
+        weekSelect.disabled = true;
+      }
+    }
+
+    // ============================================================
+    // FILTERING LOGIC
+    // ============================================================
+    function applyFilter() {
+      const yVal = document.getElementById('yearSelect').value;
+      const mVal = document.getElementById('monthSelect').value;
+      const wVal = document.getElementById('weekSelect').value;
+
+      let start = new Date(0);
+      let end = new Date();
+      let label = "All Time";
+
+      if (yVal !== 'all') {
+        const year = parseInt(yVal);
+        if (mVal !== 'all' && mVal !== null && mVal !== '') {
+          const month = parseInt(mVal);
+          if (wVal !== 'all' && wVal !== null && wVal !== '') {
+            // Filter by specific week
+            const week = parseInt(wVal);
+            const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+            const dow = simple.getUTCDay();
+            const ISOweekStart = new Date(simple);
+            if (dow <= 4) ISOweekStart.setUTCDate(simple.getUTCDate() - simple.getUTCDay() + 1);
+            else ISOweekStart.setUTCDate(simple.getUTCDate() + 8 - simple.getUTCDay());
+            
+            start = new Date(ISOweekStart);
+            end = new Date(ISOweekStart);
+            end.setUTCDate(end.getUTCDate() + 6);
+            end.setUTCHours(23, 59, 59, 999);
+            label = `Week ${week} of ${year}`;
+          } else {
+            // Filter by specific month
+            start = new Date(Date.UTC(year, month, 1));
+            end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            label = `${monthNames[month]} ${year}`;
+          }
+        } else {
+          // Filter by specific year
+          start = new Date(Date.UTC(year, 0, 1));
+          end = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+          label = `Year ${year}`;
+        }
+      }
+
+      CURRENT_FILTER = { start, end, label };
+      updateDashboardDisplay();
+    }
+
+    // ============================================================
+    // TABLE RENDERING
+    // ============================================================
+    function renderPostRow(post, index) {
+      const msg = truncateMessage(post.message);
+      const date = formatDate(post.created_time);
+      const type = post.post_type || 'status';
+      const reactions = parseInt(post.reactions) || 0;
+      const comments = parseInt(post.comments) || 0;
+      const shares = parseInt(post.shares) || 0;
+      const total = reactions + comments + shares;
+      const link = post.permalink_url || '#';
+      
+
+      const rankCell = index !== undefined ? `<td>${index}</td>` : '';
+      
+      return `
+        <tr>
+          ${rankCell}
+          <td class="message-cell" title="${escapeHtml(post.message || '')}">${escapeHtml(msg)}</td>
+          <td><span class="post-type-badge ${type}">${type}</span></td>
+          <td>${date}</td>
+          <td>${formatShortNumber(reactions)}</td>
+          <td>${formatShortNumber(comments)}</td>
+          <td>${formatShortNumber(shares)}</td>
+          <td class="engagement-total">${formatShortNumber(total)}</td>
+          <td><a href="${link}" target="_blank" rel="noopener noreferrer" class="permalink-link">View ↗</a></td>
+        </tr>
+      `;
+    }
+
+    // ============================================================
+    // DESTROY CHARTS
+    // ============================================================
+    function destroyCharts() {
+      if (followerChartInstance) { followerChartInstance.destroy(); followerChartInstance = null; }
+      if (typeChartInstance) { typeChartInstance.destroy(); typeChartInstance = null; }
+    }
+
+    // ============================================================
+    // UPDATE DASHBOARD DISPLAY (Based on Filter)
+    // ============================================================
+    function updateDashboardDisplay() {
+      const { start, end } = CURRENT_FILTER;
+      
+      const filteredPosts = RAW_DATA.posts.filter(p => {
+        if (!p.created_time) return false;
+        const d = new Date(p.created_time);
+        return d >= start && d <= end;
+      });
+
+      const filteredFollowers = RAW_DATA.followers.filter(f => {
+        if (!f.snapshot_date) return false;
+        const d = new Date(f.snapshot_date);
+        return d >= start && d <= end;
+      });
+
+      const totalReactions = filteredPosts.reduce((s, p) => s + (parseInt(p.reactions) || 0), 0);
+      const totalComments = filteredPosts.reduce((s, p) => s + (parseInt(p.comments) || 0), 0);
+      
+      let displayFollowers = 0;
+      let followerChange = 0;
+      let heroTitleText = "Total Current Followership";
+
+      if (filteredFollowers.length > 0) {
+        const firstFollowers = parseInt(filteredFollowers[0].fan_count) || 0;
+        const lastFollowers = parseInt(filteredFollowers[filteredFollowers.length - 1].fan_count) || 0;
+        
+        if (CURRENT_FILTER.label === 'All Time') {
+          displayFollowers = lastFollowers;
+          const prevFollowers = filteredFollowers.length > 1 ? parseInt(filteredFollowers[filteredFollowers.length - 2].fan_count) || 0 : lastFollowers;
+          followerChange = lastFollowers - prevFollowers;
+        } else {
+          displayFollowers = lastFollowers; 
+          followerChange = lastFollowers - firstFollowers; 
+          heroTitleText = `Followers at end of ${CURRENT_FILTER.label}`;
+        }
+      }
+
+      const avgEngagement = filteredPosts.length > 0 ? Math.round((totalReactions + totalComments) / filteredPosts.length) : 0;
+
+      document.getElementById('heroFollowers').textContent = formatExactNumber(displayFollowers);
+      document.getElementById('heroFollowersTitle').textContent = heroTitleText;
+
+      document.getElementById('metricsGrid').innerHTML = `
+        <div class="metric-card"><div class="label">Total Reactions</div><div class="value">${formatExactNumber(totalReactions)}</div><div class="context">Across ${filteredPosts.length} posts</div></div>
+        <div class="metric-card"><div class="label">Total Comments</div><div class="value">${formatExactNumber(totalComments)}</div><div class="context">User interactions</div></div>
+        <div class="metric-card"><div class="label">Followers Growth</div><div class="value">${displayFollowers > 0 ? formatExactNumber(displayFollowers) : '—'}</div><div class="context" style="color:${followerChange>0?'var(--success)':followerChange<0?'var(--danger)':'var(--text-muted)'}">${followerChange!==0?`${followerChange>0?'↑':'↓'} ${formatExactNumber(Math.abs(followerChange))} ${CURRENT_FILTER.label === 'All Time' ? 'new' : 'change'}`:'No change'}</div></div>
+        <div class="metric-card"><div class="label">Avg. Engagement/Post</div><div class="value">${formatExactNumber(avgEngagement)}</div><div class="context">Reactions + Comments</div></div>
+      `;
+
+      const topPosts = [...filteredPosts].sort((a, b) => totalEngagement(b) - totalEngagement(a)).slice(0, 10);
+      document.querySelector('#topPostsTable tbody').innerHTML = topPosts.length
+        ? topPosts.map((p, i) => renderPostRow(p, i + 1)).join('')
+        : '<tr><td colspan="9" class="empty-state">No posts found in this period</td></tr>';
+
+      const recentPosts = [...filteredPosts].sort((a, b) => (b.created_time||'').localeCompare(a.created_time||'')).slice(0, 5);
+      document.querySelector('#recentPostsTable tbody').innerHTML = recentPosts.length
+        ? recentPosts.map(p => renderPostRow(p)).join('')
+        : '<tr><td colspan="8" class="empty-state">No recent posts in this period</td></tr>';
+
+      const typeCount = {};
+      filteredPosts.forEach(p => { const t = p.post_type || 'status'; typeCount[t] = (typeCount[t] || 0) + 1; });
+
+      destroyCharts();
+      renderFollowerChart(filteredFollowers);
+      renderTypeChart(typeCount);
+
+      document.getElementById('updatedLine').textContent = `Dashboard synced: ${new Date().toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' })} | Period: ${CURRENT_FILTER.label}`;
+    }
+
+    // ============================================================
+    // MAIN INITIALIZATION
+    // ============================================================
+    async function renderDashboard() {
+      hideError();
+      document.getElementById('metricsGrid').innerHTML = '<div class="loading">Loading data...</div>';
+      document.querySelector('#topPostsTable tbody').innerHTML = '<tr><td colspan="9" class="loading">Loading posts...</td></tr>';
+      document.querySelector('#recentPostsTable tbody').innerHTML = '<tr><td colspan="8" class="loading">Loading posts...</td></tr>';
+      destroyCharts();
+
+      try {
+        await fetchData();
+
+        // Update badge
+        let latestDate = new Date(0), latestStr = 'Unknown';
+        RAW_DATA.followers.forEach(f => {
+          if (f.snapshot_date) {
+            const d = new Date(f.snapshot_date);
+            if (!isNaN(d) && d > latestDate) {
+              d.setHours(8, 0, 0, 0);
+              latestDate = d; 
+              latestStr = d.toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+            }
+          }
+        });
+        document.getElementById('latestUpdateBadge').textContent = `⏱ Backend updated: ${latestStr}`;
+
+        // Populate initial dropdown states
+        populateYears();
+        document.getElementById('monthSelect').disabled = true;
+        document.getElementById('weekSelect').disabled = true;
+
+        // Initialize with 'All Time' filter
+        applyFilter();
+
+      } catch (err) {
+        console.error(err);
+        showError(`Failed to load: ${err.message}`);
+        document.getElementById('metricsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1">⚠️ Unable to load data</div>';
+        document.querySelector('#topPostsTable tbody').innerHTML = '<tr><td colspan="9" class="empty-state">—</td></tr>';
+        document.querySelector('#recentPostsTable tbody').innerHTML = '<tr><td colspan="8" class="empty-state">—</td></tr>';
+      }
+    }
+
+    // ============================================================
+    // CHARTS
+    // ============================================================
+    function renderFollowerChart(followers) {
+      const ctx = document.getElementById('followerChart');
+      if (!ctx || followers.length < 2) { if(ctx) ctx.parentElement.innerHTML = '<div class="empty-state">Not enough data for this period</div>'; return; }
+      const unique = {};
+      followers.forEach(f => { if (f.snapshot_date && f.fan_count) unique[f.snapshot_date] = f.fan_count; });
+      const entries = Object.entries(unique);
+      if (entries.length < 2) { ctx.parentElement.innerHTML = '<div class="empty-state">Not enough data for this period</div>'; return; }
+      
+      ctx.parentElement.innerHTML = '<canvas id="followerChart"></canvas>';
+      const newCtx = document.getElementById('followerChart');
+
+      followerChartInstance = new Chart(newCtx, {
+        type: 'line',
+        data: {
+          labels: entries.map(([d]) => formatDate(d)),
+          datasets: [{
+            label: 'Followers', data: entries.map(([,c]) => parseInt(c)||0),
+            borderColor: '#c9a94b', backgroundColor: 'rgba(201,169,75,0.15)',
+            fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: '#c9a94b', borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { backgroundColor:'#0b1a2b', titleColor:'#fff', bodyColor:'#f0f2f5', borderColor:'#c9a94b', borderWidth:1, callbacks: { label: c => `Followers: ${formatExactNumber(c.parsed.y)}` } } },
+          scales: { y: { beginAtZero:false, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#b9c7dd', font:{size:10}, callback:v=>formatShortNumber(v)} }, x: { grid:{display:false}, ticks:{color:'#b9c7dd', font:{size:10}, maxTicksLimit:8} } }
+        }
+      });
+    }
+
+    function renderTypeChart(typeCount) {
+      const ctx = document.getElementById('typeChart');
+      if (!ctx) return;
+      ctx.parentElement.innerHTML = '<canvas id="typeChart"></canvas>';
+      const newCtx = document.getElementById('typeChart');
+
+      const entries = Object.entries(typeCount);
+      if (!entries.length) { newCtx.parentElement.innerHTML = '<div class="empty-state">No data for this period</div>'; return; }
+      const colors = { photo:{bg:'rgba(46,204,113,0.8)',bd:'#2ecc71'}, video:{bg:'rgba(231,76,60,0.8)',bd:'#e74c3c'}, album:{bg:'rgba(201,169,75,0.8)',bd:'#c9a94b'}, status:{bg:'rgba(137,150,170,0.8)',bd:'#8896aa'}, link:{bg:'rgba(52,152,219,0.8)',bd:'#3498db'} };
+      
+      typeChartInstance = new Chart(newCtx, {
+        type: 'doughnut',
+        data: {
+          labels: entries.map(([t]) => t.charAt(0).toUpperCase()+t.slice(1)),
+          datasets: [{ data: entries.map(([,c]) => c), backgroundColor: entries.map(([t]) => colors[t]?.bg||'rgba(137,150,170,0.8)'), borderColor: entries.map(([t]) => colors[t]?.bd||'#8896aa'), borderWidth: 2 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: { legend: { position:'bottom', labels:{padding:16, usePointStyle:true, color:'#f0f2f5', font:{family:"'Libre Franklin',sans-serif", size:12}} }, tooltip: { backgroundColor:'#0b1a2b', titleColor:'#fff', bodyColor:'#f0f2f5', borderColor:'#c9a94b', borderWidth:1 } }
+        }
+      });
+    }
+
+    // ============================================================
+    // EVENT LISTENERS FOR FILTERS
+    // ============================================================
+    document.getElementById('yearSelect').addEventListener('change', function() {
+      populateMonths(this.value);
+      applyFilter();
+    });
+
+    document.getElementById('monthSelect').addEventListener('change', function() {
+      populateWeeks(document.getElementById('yearSelect').value, this.value);
+      applyFilter();
+    });
+
+    document.getElementById('weekSelect').addEventListener('change', applyFilter);
+
+    document.getElementById('resetFilters').addEventListener('click', function() {
+      document.getElementById('yearSelect').value = 'all';
+      populateMonths('all');
+      applyFilter();
+    });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    renderDashboard();
+  </script>
+</body>
+</html>

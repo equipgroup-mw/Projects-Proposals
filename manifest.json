@@ -1,0 +1,24 @@
+{
+  "name": "Equip Socials Tracker",
+  "short_name": "Tracker",
+  "description": "Automated daily tracking for Facebook reactions, comments, shares, and followers.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a1625",
+  "theme_color": "#0a1625",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
