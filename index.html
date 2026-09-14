@@ -13,9 +13,9 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root {
-      --brand-gold: #c9a94b;
+      --brand-gold: #a8935a;
       --brand-gold-light: #e6c468;
-      --brand-navy: #0a1625;
+      --brand-navy: #0d2136;
       --brand-dark-blue: #0f2136;
       --brand-card-bg: #10273e;
       --text-primary: #f0f2f5;
@@ -49,13 +49,22 @@
     .header-logo { max-height: 90px; width: auto; max-width: 100%; object-fit: contain; }
     .subtitle { color: var(--text-secondary); font-size: clamp(0.85rem, 2.8vw, 1rem); display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; justify-content: flex-end; text-align: right; }
     .latest-update-badge { background: rgba(201, 169, 75, 0.12); border: 1px solid var(--brand-gold); color: var(--brand-gold-light); padding: 0.2rem 0.7rem; border-radius: var(--radius-pill); font-size: clamp(0.7rem, 2.5vw, 0.75rem); font-weight: 500; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
-    .filter-bar { display: flex; align-items: center; gap: 0.8rem; background: rgba(201,169,75,0.06); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 0.8rem 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    
+    /* Accordion Filter Bar */
+    .filter-accordion { background: rgba(201,169,75,0.06); border: 1px solid var(--border-subtle); border-radius: 16px; margin-bottom: 1.5rem; overflow: hidden; }
+    .filter-toggle { display: none; width: 100%; padding: 1rem 1.5rem; background: none; border: none; color: var(--brand-gold-light); font-family: 'Libre Franklin', sans-serif; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; justify-content: space-between; align-items: center; }
+    .filter-toggle .arrow { transition: transform 0.3s ease; font-size: 1.2rem; }
+    .filter-toggle.active .arrow { transform: rotate(180deg); }
+    .filter-toggle .active-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-left: auto; margin-right: 1rem; box-shadow: 0 0 8px var(--success); }
+    
+    .filter-bar { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; flex-wrap: wrap; }
     .filter-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
     .filter-select { background: rgba(201, 169, 75, 0.08); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 0.4rem 0.8rem; border-radius: var(--radius-pill); font-family: 'Libre Franklin', sans-serif; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: var(--transition); white-space: nowrap; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c9a94b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .6rem; padding-right: 2rem; }
     .filter-select:hover, .filter-select:focus { background-color: rgba(201, 169, 75, 0.2); border-color: var(--brand-gold); color: var(--brand-gold-light); outline: none; }
     .filter-select option { background: var(--brand-navy); color: var(--text-primary); }
     .reset-btn { background: rgba(231, 76, 60, 0.1); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.3); padding: 0.4rem 1rem; border-radius: var(--radius-pill); font-family: 'Libre Franklin', sans-serif; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: var(--transition); margin-left: auto; }
     .reset-btn:hover { background: rgba(231, 76, 60, 0.2); border-color: var(--danger); }
+    
     .error-banner { background: rgba(231, 76, 60, 0.1); border: 1px solid var(--danger); color: #e74c3c; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; display: none; align-items: center; gap: 0.5rem; }
     .error-banner.visible { display: flex; }
     .hero-section { margin-bottom: 1.5rem; }
@@ -103,14 +112,25 @@
     .updated { text-align: right; color: var(--text-muted); font-size: clamp(0.65rem, 2.2vw, 0.7rem); margin-top: clamp(1.2rem, 4vw, 2rem); padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); }
     .retry-btn { background: var(--brand-gold); color: var(--brand-navy); border: none; padding: 0.5rem 1.5rem; border-radius: var(--radius-pill); font-weight: 600; cursor: pointer; transition: var(--transition); font-family: 'Libre Franklin', sans-serif; }
     .retry-btn:hover { background: var(--brand-gold-light); }
-    @media (max-width: 768px) {
+
+    /* Mobile & Portrait Tablet Accordion Logic */
+    @media (max-width: 900px) {
       .header { flex-direction: column; align-items: center; gap: 0.8rem; }
       .subtitle { flex-direction: column; align-items: center; text-align: center; gap: 0.4rem; width: 100%; }
-      .filter-bar { flex-direction: column; align-items: stretch; }
+      
+      .filter-toggle { display: flex; }
+      .filter-bar { flex-direction: column; align-items: stretch; max-height: 0; padding: 0 1rem; opacity: 0; pointer-events: none; transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease; overflow: hidden; }
+      .filter-bar.open { max-height: 500px; padding: 1rem; opacity: 1; pointer-events: auto; }
+      
       .filter-select { width: 100%; text-align-last: center; }
-      .reset-btn { margin-left: 0; margin-top: 0.5rem; }
+      .reset-btn { margin-left: 0; margin-top: 0.5rem; width: 100%; text-align: center; }
+      
       .hero-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
       .chart-container { height: 250px; }
+      
+      .table-toolbar { flex-direction: column; align-items: stretch; }
+      .table-toolbar .filter-label { text-align: center; }
+      .table-toolbar .filter-select { width: 100%; text-align-last: center; }
     }
   </style>
 </head>
@@ -124,29 +144,36 @@
     </div>
   </div>
 
-  <!-- FILTER BAR -->
-  <div class="filter-bar">
-    <span class="filter-label">Filter by Status:</span>
-    <select id="statusFilter" class="filter-select">
-      <option value="all">All Statuses</option>
-      <option value="Won">Won</option>
-      <option value="Lost">Lost</option>
-      <option value="Pending">Pending</option>
-      <option value="Withdrawn">Withdrawn</option>
-    </select>
-    <span class="filter-arrow">›</span>
-    <select id="sourceFilter" class="filter-select">
-      <option value="all">All Sources</option>
-    </select>
-    <span class="filter-arrow">›</span>
-    <select id="submissionFilter" class="filter-select">
-      <option value="all">All Submission Modes</option>
-    </select>
-    <span class="filter-arrow">›</span>
-    <select id="tierFilter" class="filter-select">
-      <option value="all">All Tiers</option>
-    </select>
-    <button class="reset-btn" id="resetFilters">Reset</button>
+  <!-- FILTER ACCORDION -->
+  <div class="filter-accordion">
+    <button class="filter-toggle" id="filterToggleBtn" aria-expanded="false">
+      <span>Filter Proposals</span>
+      <span class="active-dot" id="activeFilterDot" style="display: none;"></span>
+      <span class="arrow">▼</span>
+    </button>
+    <div class="filter-bar" id="filterBar">
+      <span class="filter-label">Filter by Status:</span>
+      <select id="statusFilter" class="filter-select">
+        <option value="all">All Statuses</option>
+        <option value="Won">Won</option>
+        <option value="Lost">Lost</option>
+        <option value="Pending">Pending</option>
+        <option value="Withdrawn">Withdrawn</option>
+      </select>
+      <span class="filter-arrow">›</span>
+      <select id="sourceFilter" class="filter-select">
+        <option value="all">All Sources</option>
+      </select>
+      <span class="filter-arrow">›</span>
+      <select id="submissionFilter" class="filter-select">
+        <option value="all">All Submission Modes</option>
+      </select>
+      <span class="filter-arrow">›</span>
+      <select id="tierFilter" class="filter-select">
+        <option value="all">All Tiers</option>
+      </select>
+      <button class="reset-btn" id="resetFilters">Reset</button>
+    </div>
   </div>
 
   <div id="errorBanner" class="error-banner">
@@ -249,6 +276,11 @@
     const heroCard = document.getElementById('heroCard');
     const wonMonthFilter = document.getElementById('wonMonthFilter');
     const allMonthFilter = document.getElementById('allMonthFilter');
+    
+    // Accordion elements
+    const filterToggleBtn = document.getElementById('filterToggleBtn');
+    const filterBar = document.getElementById('filterBar');
+    const activeFilterDot = document.getElementById('activeFilterDot');
 
     function showError(msg) { errorBanner.classList.add('visible'); errorMessage.textContent = msg; }
     function hideError() { errorBanner.classList.remove('visible'); }
@@ -375,6 +407,11 @@
         return `MWK ${amount.toLocaleString('en-US', {maximumFractionDigits:0})}`;
       }
       return `$${amount.toLocaleString('en-US', {maximumFractionDigits:0})}`;
+    }
+
+    function checkActiveFilters() {
+      const isActive = statusFilter.value !== 'all' || sourceFilter.value !== 'all' || submissionFilter.value !== 'all' || tierFilter.value !== 'all';
+      activeFilterDot.style.display = isActive ? 'block' : 'none';
     }
 
     function renderMetrics(data) {
@@ -661,6 +698,7 @@
       const wonOnly = filtered.filter(d => d.status.toLowerCase() === 'won');
       renderWonTable(wonOnly);
       renderAllProposalsTable(filtered);
+      checkActiveFilters();
       document.getElementById('updatedLine').textContent = `Synced: ${new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} | Showing ${filtered.length} proposals`;
     }
 
@@ -681,6 +719,13 @@
     }
 
     // --- EVENT LISTENERS ---
+
+    // Accordion Toggle
+    filterToggleBtn.addEventListener('click', () => {
+      const isOpen = filterBar.classList.toggle('open');
+      filterToggleBtn.classList.toggle('active', isOpen);
+      filterToggleBtn.setAttribute('aria-expanded', isOpen);
+    });
 
     // Global filters
     statusFilter.addEventListener('change', updateUI);
