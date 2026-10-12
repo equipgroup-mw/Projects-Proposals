@@ -161,6 +161,87 @@
   .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
   .three-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
 
+  /* ===== Floating PWA Install Button ===== */
+  .pwa-install-fab {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.85rem 1.15rem 0.85rem 1rem;
+    background: linear-gradient(135deg, var(--brand-gold), var(--brand-gold-light));
+    color: var(--brand-navy);
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 10px 30px rgba(201, 169, 75, 0.45),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s ease,
+                opacity 0.3s ease;
+    animation: pwaFabIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .pwa-install-fab:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      0 16px 40px rgba(201, 169, 75, 0.55),
+      0 6px 16px rgba(0, 0, 0, 0.5);
+  }
+  .pwa-install-fab:active { transform: translateY(-1px) scale(0.99); }
+  .pwa-install-fab.hidden { display: none; }
+  .pwa-install-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    display: inline-block;
+    animation: pwaFabBounce 2s ease-in-out infinite;
+  }
+  .pwa-install-text { white-space: nowrap; }
+  .pwa-install-dismiss {
+    background: rgba(13, 33, 54, 0.15);
+    color: var(--brand-navy);
+    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    margin-left: 0.35rem;
+    padding: 0;
+    transition: background 0.2s ease;
+  }
+  .pwa-install-dismiss:hover { background: rgba(13, 33, 54, 0.3); }
+  @keyframes pwaFabIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes pwaFabBounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-2px); }
+  }
+  @media (max-width: 480px) {
+    .pwa-install-fab {
+      padding: 0.75rem 1rem 0.75rem 0.85rem;
+      font-size: 0.78rem;
+      right: max(0.75rem, env(safe-area-inset-right));
+      bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .pwa-install-text { display: none; }
+    .pwa-install-icon { font-size: 1.3rem; }
+  }
+
   @media (max-width: 900px) {
     .header { flex-direction: column; align-items: center; gap: 0.8rem; }
     .subtitle { flex-direction: column; align-items: center; text-align: center; gap: 0.4rem; width: 100%; }
@@ -199,11 +280,10 @@
   </div>
 
   <!-- ===================================================================
-       TAB PANEL 1 — PROPOSALS (your original dashboard)
+       TAB PANEL 1 — PROPOSALS
        =================================================================== -->
   <section class="tab-panel active" id="panel-proposals">
 
-    <!-- FILTER ACCORDION -->
     <div class="filter-accordion">
       <button class="filter-toggle" id="pFilterToggleBtn" aria-expanded="false">
         <span>Filter Proposals</span>
@@ -297,11 +377,10 @@
   </section>
 
   <!-- ===================================================================
-       TAB PANEL 2 — PROJECTS (EQUIP consolidated data)
+       TAB PANEL 2 — PROJECTS
        =================================================================== -->
   <section class="tab-panel" id="panel-projects">
 
-    <!-- FILTER ACCORDION -->
     <div class="filter-accordion">
       <button class="filter-toggle" id="jFilterToggleBtn" aria-expanded="false">
         <span>Filter Projects</span>
@@ -381,12 +460,19 @@
   <div class="updated" id="updatedLine"></div>
 </div>
 
+<!-- ===== Floating PWA Install Button ===== -->
+<button id="pwaInstallBtn" class="pwa-install-fab hidden" aria-label="Install dashboard as app">
+  <span class="pwa-install-icon">⬇</span>
+  <span class="pwa-install-text">Install App</span>
+  <button id="pwaInstallDismiss" class="pwa-install-dismiss" aria-label="Dismiss">×</button>
+</button>
+
 <script>
 /* ============================================================
    CONFIG — paste your published CSV URLs here
    ============================================================ */
 const PROPOSALS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_wSWn5L7_xBdrxHn5bibw6jhEtcc1YKwoHXVkfDe1C80IdCdLOrNHdO7a9rDdq6FxOTrvM8qnFzdb/pub?gid=0&single=true&output=csv';
-const PROJECTS_CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQEwSSY-toxgKv4gZznXg2wMZlj8f2mRTdm-wwvzb2ry7n2ushsKVNa7kFVyeekPA/pub?gid=130171512&single=true&output=csv';
+const PROJECTS_CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-XXXX/pub?gid=YOUR_GID&single=true&output=csv';
 
 /* ============================================================
    HELPERS
@@ -430,7 +516,6 @@ function uniqueSorted(arr) {
       btn.classList.add('active');
       btn.setAttribute('aria-selected', 'true');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-      // Lazy-load projects on first visit
       if (btn.dataset.tab === 'projects' && !ProjectsPortal.loaded) {
         ProjectsPortal.render();
       }
@@ -454,7 +539,7 @@ bindAccordion('pFilterToggleBtn', 'pFilterBar');
 bindAccordion('jFilterToggleBtn', 'jFilterBar');
 
 /* ============================================================
-   PORTAL 1 — PROPOSALS (your original logic)
+   PORTAL 1 — PROPOSALS
    ============================================================ */
 const ProposalsPortal = (() => {
   let rawData = [];
@@ -610,7 +695,6 @@ const ProposalsPortal = (() => {
   }
 
   function renderCharts(data) {
-    // Status doughnut
     const statusCtx = document.getElementById('pStatusChart');
     if (statusChartInstance) statusChartInstance.destroy();
     const statusCounts = {};
@@ -634,7 +718,6 @@ const ProposalsPortal = (() => {
       });
     }
 
-    // Won by source
     const srcCtx = document.getElementById('pSourceWinChart');
     if (sourceWinChartInstance) sourceWinChartInstance.destroy();
     const won = data.filter(d => d.status.toLowerCase() === 'won');
@@ -768,7 +851,6 @@ const ProposalsPortal = (() => {
     }
   }
 
-  // Events
   el.statusFilter.addEventListener('change', updateUI);
   el.sourceFilter.addEventListener('change', updateUI);
   el.submissionFilter.addEventListener('change', updateUI);
@@ -808,10 +890,9 @@ const ProposalsPortal = (() => {
 })();
 
 /* ============================================================
-   PORTAL 2 — PROJECTS (EQUIP consolidated data)
+   PORTAL 2 — PROJECTS
    ============================================================ */
 const ProjectsPortal = (() => {
-  // Column indices in PROJECT INFO sheet
   const COL = {
     id: 0, project: 1, client: 2, source: 3, dept: 4,
     years: 5, startMonth: 6, startYear: 7, endMonth: 8, endYear: 9,
@@ -822,7 +903,7 @@ const ProjectsPortal = (() => {
 
   let rawData = [];
   let loaded = false;
-  let heroMode = 'count'; // 'count' | 'staff'
+  let heroMode = 'count';
   const charts = {};
   const tableState = { sortKey: null, sortDir: 'asc', filterYear: 'all' };
 
@@ -846,7 +927,7 @@ const ProjectsPortal = (() => {
   function normalizeRow(r) {
     const id = String(r[COL.id] ?? '').trim();
     const project = String(r[COL.project] ?? '').replace(/\s+/g, ' ').trim();
-    if (!project || !/^\d+$/.test(id)) return null; // require numeric ID + name
+    if (!project || !/^\d+$/.test(id)) return null;
 
     const startYear = extractYear(r[COL.startYear]);
     const endYear = extractYear(r[COL.endYear]);
@@ -886,10 +967,8 @@ const ProjectsPortal = (() => {
       const text = await res.text();
       clearTimeout(timeout);
 
-      // Use Papa for robust parsing of quoted commas/newlines
       const parsed = Papa.parse(text, { skipEmptyLines: true });
       const rows = parsed.data;
-      // First row is header, skip it
       rawData = rows.slice(1).map(normalizeRow).filter(Boolean);
       if (!rawData.length) throw new Error('No project data found');
       loaded = true;
@@ -948,7 +1027,6 @@ const ProjectsPortal = (() => {
     const femalePct = totalGender ? Math.round((female / totalGender) * 100) : 0;
     const national = data.filter(p => p.national).length;
 
-    // Hero KPI toggles between count and staff on click
     const heroValue = heroMode === 'staff' ? staff : total;
     el.heroTotal.textContent = heroValue.toLocaleString();
     el.heroLabel.textContent = heroMode === 'staff'
@@ -990,7 +1068,6 @@ const ProjectsPortal = (() => {
   }
 
   function renderCharts(data) {
-    // Key area doughnut
     const areaCounts = countBy(data, p => p.keyArea);
     destroyChart('area');
     charts.area = new Chart(document.getElementById('jChartArea'), {
@@ -1001,7 +1078,6 @@ const ProjectsPortal = (() => {
       options: { ...baseChartOpts(), cutout: '60%' }
     });
 
-    // Department bar
     const deptCounts = countBy(data, p => p.dept);
     destroyChart('dept');
     charts.dept = new Chart(document.getElementById('jChartDept'), {
@@ -1015,7 +1091,6 @@ const ProjectsPortal = (() => {
                   y: { ticks: { color: '#b9c7dd' }, grid: { color: 'rgba(255,255,255,0.08)' } } } }
     });
 
-    // Year line
     const yearCounts = {};
     data.forEach(p => { if (p.startYear) yearCounts[p.startYear] = (yearCounts[p.startYear] || 0) + 1; });
     const sortedYears = Object.keys(yearCounts).sort();
@@ -1032,7 +1107,6 @@ const ProjectsPortal = (() => {
                   y: { ticks: { color: '#b9c7dd', precision: 0 }, grid: { color: 'rgba(255,255,255,0.08)' } } } }
     });
 
-    // Source pie
     const srcCounts = countBy(data, p => p.source);
     destroyChart('source');
     charts.source = new Chart(document.getElementById('jChartSource'), {
@@ -1043,7 +1117,6 @@ const ProjectsPortal = (() => {
       options: baseChartOpts()
     });
 
-    // Gender doughnut
     const m = data.reduce((s, p) => s + p.male, 0);
     const f = data.reduce((s, p) => s + p.female, 0);
     destroyChart('gender');
@@ -1055,7 +1128,6 @@ const ProjectsPortal = (() => {
       options: { ...baseChartOpts(), cutout: '65%' }
     });
 
-    // Value chain bar
     const vc = {};
     data.forEach(p => p.valueChain.forEach(v => { vc[v] = (vc[v] || 0) + 1; }));
     const sortedVC = Object.entries(vc).sort((a, b) => b[1] - a[1]).slice(0, 10);
@@ -1090,7 +1162,6 @@ const ProjectsPortal = (() => {
       : data.filter(d => String(d.startYear) === tableState.filterYear);
     rows = sortRows(rows);
 
-    // Sort indicators
     document.querySelectorAll('#jProjectsTable thead th').forEach(th => {
       th.classList.remove('sort-asc', 'sort-desc');
       if (th.dataset.key === tableState.sortKey) {
@@ -1153,7 +1224,6 @@ const ProjectsPortal = (() => {
     }
   }
 
-  // Events
   el.search.addEventListener('input', updateUI);
   el.dept.addEventListener('change', updateUI);
   el.area.addEventListener('change', updateUI);
@@ -1194,18 +1264,115 @@ const ProjectsPortal = (() => {
 })();
 
 /* ============================================================
-   BOOT — load proposals first (default tab)
+   BOOT
    ============================================================ */
 ProposalsPortal.render();
 </script>
 
-<!-- PWA service worker registration (optional, works even without sw.js) -->
+<!-- ============================================================
+     PWA — Service Worker registration
+     ============================================================ -->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => { /* silent */ });
   });
 }
+</script>
+
+<!-- ============================================================
+     FLOATING PWA INSTALL BUTTON
+     - Shows only when beforeinstallprompt fires (installable + not installed)
+     - Hides on successful install, dismissal, or when running standalone
+     ============================================================ -->
+<script>
+(function initPwaInstallButton() {
+  const btn = document.getElementById('pwaInstallBtn');
+  const dismiss = document.getElementById('pwaInstallDismiss');
+  const DISMISS_KEY = 'equip_pwa_dismissed_until';
+  let deferredPrompt = null;
+
+  function isStandalone() {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      window.navigator.standalone === true ||
+      document.referrer.startsWith('android-app://')
+    );
+  }
+
+  function isDismissed() {
+    const until = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+    return Date.now() < until;
+  }
+
+  function hide() { btn.classList.add('hidden'); }
+  function show() { btn.classList.remove('hidden'); }
+
+  if (isStandalone()) { hide(); return; }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (isStandalone() || isDismissed()) return;
+    show();
+  });
+
+  btn.addEventListener('click', async (e) => {
+    if (e.target === dismiss) return;
+    if (!deferredPrompt) return;
+    btn.disabled = true;
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') hide();
+      deferredPrompt = null;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  dismiss.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + sevenDays));
+    hide();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    hide();
+    deferredPrompt = null;
+    localStorage.removeItem(DISMISS_KEY);
+  });
+
+  const mq = window.matchMedia('(display-mode: standalone)');
+  (mq.addEventListener || mq.addListener).call(mq, 'change', () => {
+    if (isStandalone()) hide();
+  });
+
+  /* iOS hint — Safari doesn't fire beforeinstallprompt */
+  (function iosInstallHint() {
+    const ua = window.navigator.userAgent;
+    const isIos = /iphone|ipad|ipod/i.test(ua);
+    const isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua);
+    const isStandaloneIos = window.navigator.standalone === true;
+    const dismissed = localStorage.getItem('equip_ios_hint_dismissed');
+    if (!isIos || !isSafari || isStandaloneIos || dismissed || isDismissed()) return;
+
+    const iconEl = btn.querySelector('.pwa-install-icon');
+    const textEl = btn.querySelector('.pwa-install-text');
+    if (iconEl) iconEl.textContent = '⎙';
+    if (textEl) textEl.textContent = 'Add to Home Screen';
+    show();
+
+    btn.addEventListener('click', (e) => {
+      if (e.target === dismiss) return;
+      alert('Tap the Share icon ⎙ then choose "Add to Home Screen".');
+      localStorage.setItem('equip_ios_hint_dismissed', '1');
+      hide();
+    });
+  })();
+})();
 </script>
 </body>
 </html>
