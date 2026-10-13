@@ -1,12 +1,32 @@
 {
   "name": "Projects & Proposals",
   "short_name": "Projects",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/Projects-Proposals/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0d2136",
   "theme_color": "#0d2136",
+  "description": "Project & proposal tracking dashboard for Equip Group",
   "icons": [
-    { "src": "assets/browser.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "assets/browser.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "assets/browser.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

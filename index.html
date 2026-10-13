@@ -1273,9 +1273,27 @@ ProposalsPortal.render();
      PWA — Service Worker registration
      ============================================================ -->
 <script>
+/* ============================================================
+   PWA — Service Worker registration (scoped to this subpath)
+   ============================================================ */
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* silent */ });
+  window.addEventListener('load', async () => {
+    try {
+      // Register scoped to this folder only (no leading slash → subpath-safe)
+      const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+      console.log('SW registered. Scope:', reg.scope);
+
+      // Self-heal: if a previous domain-wide SW was ever registered, unregister it
+      const allRegs = await navigator.serviceWorker.getRegistrations();
+      for (const r of allRegs) {
+        if (r !== reg && r.scope === location.origin + '/') {
+          console.warn('Unregistering stray root-scoped SW:', r.scope);
+          await r.unregister();
+        }
+      }
+    } catch (err) {
+      console.warn('SW registration failed:', err);
+    }
   });
 }
 </script>
