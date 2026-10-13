@@ -18,13 +18,13 @@
     },
     {
       "src": "assets/icon.png",
-      "sizes": "1254x1254",
+      "sizes": "2000x2000",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "assets/icon.png",
-      "sizes": "1254x1254",
+      "sizes": "2000x2000",
       "type": "image/png",
       "purpose": "maskable"
     }
